@@ -1,91 +1,129 @@
-import React, { useState,useEffect } from "react";
+import React, { useEffect,useState} from "react";
 import axios from "axios";
 import "./style/style.css"
-import {Link, Route, useNavigate} from "react-router-dom";
 import Appbar from "./Appbar";
-import { Card, CardActions, CardContent, CardMedia,Typography,Button, CircularProgress } from "@mui/material";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPenToSquare,faPlus,faTrash } from "@fortawesome/free-solid-svg-icons";
-function ShowCourses() {
+import { Route, useNavigate } from "react-router-dom";
+import { Card,Button,TextField,Link,Typography, Switch, Snackbar, Alert,CircularProgress} from "@mui/material";
+function Register() {
     const navigate = useNavigate();
-    const [username,setUsername] = useState("");
-    const [courses, setCourses] = useState([]);
-    const [isLoggedIn,setIsLoggedIn] = useState(true);
-    useEffect(()=>{
-        const access_token = JSON.parse(localStorage.getItem('access_token'));
-        axios.get("https://coursify.onrender.com/admin/courses/",{
-            headers:
-            {
-                Authorization: `Bearer ${access_token}`
-            }
-        }).then((res)=>{
-            setIsLoggedIn(false);
-            callback(res.data);
-            
-        }).catch((err)=>{
-            console.log(err);
-        })
-    })
+    const [email, setEmail] = useState("");
+    const [password,setPass] = useState("");
+    const [error,setError] = useState(false);
+    const [errmessage,setErrmessage] = useState("");
+    const [userType,setUserType] = useState(true);
+    const [open,setOpen] = useState(false);
+    const [loading,setLoading] = useState(false);
+    const handleClose = (event, reason) => {
+        if (reason === 'clickaway') {
+          return;
+        }
+    
+        setOpen(false);
+      };
 
-    function callback(data){
-        setCourses(data.courses);
-        const user = JSON.parse(localStorage.getItem('username'));
-        const finaluser = user.split('@')[0];
-        setUsername(finaluser);
-        localStorage.setItem('username',JSON.stringify(finaluser));
+    function Handleclick(e){
+        setLoading(true);
+        if(email === '' || password === ''){
+            setErrmessage("Invalid username or password");
+            setError(true);
+        }
+        else if(userType === true){
+            setErrmessage(false);
+            axios.post("https://coursify.onrender.com/users/signup",{
+                username: email,
+                password: password
+            }).then((res)=>{
+                setOpen(true);
+                setLoading(false);
+                setTimeout(()=>{
+                    navigate('/login');
+                },1000);
+            })
+            .catch((err)=>{
+            setErrmessage("User already exists");
+            setError(true);
+            setLoading(false);
+            })
+        }
+        else if(userType === false){
+            setError(false);
+        axios.post("https://coursify.onrender.com/admin/signup",{
+            username: email,
+            password:password
+        }).then((res)=>{
+            setOpen(true);
+            setLoading(false);
+            setTimeout(()=>{
+                navigate('/login');
+            },1000);
+        }).catch((err)=>{
+            setErrmessage("User already exists");
+            setError(true);
+            setLoading(false);
+        })
+    }
     }
 
-    return (
-        <div>
-        <Appbar isLoggedIn={true} username={username}></Appbar>
-        {isLoggedIn ? <div style={{position:"absolute",top:"50%",left:"50%"}}><CircularProgress></CircularProgress></div> : <div><div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
-        <Typography variant="h3" style={{textAlign:"center",marginTop:"3%",fontWeight:"600",color:"#0d47a1"}}>Courses</Typography>
-        <Button sx={{marginTop:"1.5%"}} onClick={(e)=> {navigate('/createCourse')}} variant="contained" startIcon={<FontAwesomeIcon icon={faPlus} /> }>Add Course</Button>
-        </div>
-        <div className="showCoursesDiv" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",width:"80%",margin:"auto",gridGap:"8%",marginTop:"3%",marginBottom:"3%"}}>
-        {courses.map(c => <Course title={c.title} description={c.description} price={c.price} imgLink={c.imageLink} key={c._id} id={c._id} />)}
-        </div>
-        </div>}
-    </div>)
-}
-
-
-function handleDelete(id){
-    const access_token = JSON.parse(localStorage.getItem('access_token'));
-    axios.delete(`https://coursify.onrender.com/admin/courses/${id}`,{
-        headers:{
-            Authorization: `Bearer ${access_token}`
+    function handleUser(check){
+        if(check){
+            setUserType(false);
         }
-    }).then((res)=>{
-        console.log(res.data);
-    }).catch((err)=>{
-        alert(err);
-    })
-}
+        else{
+            setUserType(true);
+        }
+    }
 
-export function Course(props) {
-    const navigate = useNavigate();
     return(
-        <> 
-    <Card className="showCourseDivCard" raised="true" style={{minHeight:"60vh"}}>
-    <CardMedia  
-    height={200}
-    component="img"
-        sx={{objectFit: "cover"}}
-    image={props.imgLink} />
-    <CardContent >
-        <Typography sx={{fontFamily:"Poppins,sans-serif",marginBottom:"4%"}} variant="h5" align="center" style={{fontWeight:"600"}}>{props.title}</Typography>
-        <Typography sx={{fontFamily:"Poppins,sans-serif",marginBottom:"4%"}}   variant="h6" align="center">{props.description}</Typography>
-        <Typography  sx={{fontFamily:"Poppins,sans-serif",marginBottom:"4%"}} variant="h6" align="center" style={{fontWeight:"800"}}>₹ {props.price}</Typography>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-evenly"}}>
-        <Button variant="contained" onClick={(e)=>{navigate(`/courses/${props.id}`)}}  startIcon={<FontAwesomeIcon icon={faPenToSquare} />} sx={{width:"40%",marginBottom:"4%"}}>Edit</Button>
-        <Button variant="contained" color="error" onClick={(e)=>{handleDelete(props.id)}}  startIcon={<FontAwesomeIcon icon={faTrash} />} sx={{width:"40%",marginBottom:"4%"}}>Remove</Button>
-        </div>   
+        <>
+        <Appbar isLoggedIn={false} username={""}></Appbar>
+        <Card className="signupCard" raised="true" style={{width:"40vw",margin:"auto",marginTop:"5%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"3%"}} >
+        <h1 style={{textAlign:"center"}}>Welcome to Coursify</h1>
+        {loading ? <div style={{height:"40vh",width:"inherit",position:"relative"}}><CircularProgress style={{position:"absolute",top:"0",left:"0",right:"0",bottom:"0",margin:"auto",transform:"translate(50%,50%)"}} ></CircularProgress></div> : <><div style={{display:"flex",flexDirection:"row",alignItems:"center"}}>
+        {userType ? <Typography variant="string" style={{color:"#1D5D9B",fontWeight:"600"}}>User</Typography> : <Typography variant="string">User</Typography>} 
+    <Switch defaultChecked={false} onChange={(e)=>{handleUser(e.target.checked)}}></Switch>
+    {userType ? <Typography variant="string">Admin</Typography>: <Typography variant="string" style={{color:"#1D5D9B",fontWeight:"600"}}>Admin</Typography>}
+        </div>
+        <TextField 
+        onKeyDown={(e)=>{
+        if(e.key === 'Enter'){
+            Handleclick();
+        }
+     }}
+        required
+        autoComplete="off"
+        variant="outlined" 
+        label="Username" 
+        type="email" 
+        onChange={(e)=>{setEmail(e.target.value); setError(false)}}
+            margin="normal"
+         />
+        <TextField 
+        onKeyDown={(e)=>{
+        if(e.key === 'Enter'){
+            Handleclick();
+        }
+     }}
+        autoComplete="off"
+        required
+        variant="outlined" 
+        label="Password" 
+        type="text" 
+        onChange={(e)=>{setPass(e.target.value); setError(false)}}
+         margin="normal" />
+         {error && <Typography sx={{color:"red",fontStyle:"Poppins,sans-serif",fontWeight:"700"}}>{errmessage}</Typography>}
+        <Button size="large" variant="contained" style={{margin:"3%"}} onClick={Handleclick}>Signup</Button>
+        <div style={{margin:"3%"}}>Already a user? <Button variant="text"  onClick={()=> {navigate('/login')}}>Login</Button></div>
+        <Snackbar open={open} autoHideDuration={6000} onClose={handleClose}>
+        <Alert onClose={handleClose} severity="success" sx={{ width: '100%' }}>
+          { userType ? 'User created Successfully' : "Admin created successfully"}
+        </Alert>
+      </Snackbar>
+      </>
+        }
         
-    </CardContent>
         </Card>
-    </>
+        </>
     )
 }
 
-export default ShowCourses;
+export default Register;
